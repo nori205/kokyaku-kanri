@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>のりかえ顧客管理</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a22;
+    --surface2: #22222e;
+    --border: #2e2e3e;
+    --accent: #7c6aff;
+    --accent2: #ff6a8a;
+    --green: #4ade80;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --text: #e8e8f0;
+    --text2: #8888aa;
+    --text3: #555570;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+
+  header .stats {
+    font-size: 12px;
+    color: var(--text2);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+  /* リマインドセクション */
+  .remind-section {
+    background: linear-gradient(135deg, #1a1020, #201020);
+    border: 1px solid #4a2040;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+
+  .remind-section h2 {
+    font-size: 13px;
+    color: var(--accent2);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .remind-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .remind-card {
+    background: rgba(255,106,138,0.08);
+    border: 1px solid rgba(255,106,138,0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .remind-card:hover { background: rgba(255,106,138,0.15); }
+
+  .remind-card .name { font-weight: 500; font-size: 14px; }
+  .remind-card .sns { font-size: 12px; color: var(--text2); }
+
+  .badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .badge.danger { background: rgba(248,113,113,0.2); color: var(--red); border: 1px solid rgba(248,113,113,0.3); }
+  .badge.warning { background: rgba(251,191,36,0.2); color: var(--yellow); border: 1px solid rgba(251,191,36,0.3); }
+  .badge.ok { background: rgba(74,222,128,0.2); color: var(--green); border: 1px solid rgba(74,222,128,0.3); }
+
+  /* ツールバー */
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .search-box {
+    flex: 1;
+    min-width: 200px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 14px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-box:focus { border-color: var(--accent); }
+  .search-box::placeholder { color: var(--text3); }
+
+  .btn {
+    padding: 9px 16px;
+    border-radius: 8px;
+    border: none;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #6a58ee; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-danger { background: rgba(248,113,113,0.15); color: var(--red); border: 1px solid rgba(248,113,113,0.3); }
+  .btn-danger:hover { background: rgba(248,113,113,0.25); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  select.sort-select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 14px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+  }
+
+  /* テーブル */
+  .table-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  th {
+    background: var(--surface2);
+    color: var(--text2);
+    font-weight: 500;
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+  }
+
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  tr:hover td { background: rgba(124,106,255,0.04); }
+
+  tr.completed td { opacity: 0.45; }
+
+  .progress-dots {
+    display: flex;
+    gap: 4px;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  .dot.done { background: var(--green); }
+  .dot.partial { background: var(--yellow); }
+
+  .actions { display: flex; gap: 6px; }
+
+  /* 折りたたみ */
+  .section-toggle {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text2);
+    user-select: none;
+  }
+
+  .section-toggle:hover { background: var(--border); }
+
+  /* モーダル */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    width: 100%;
+    max-width: 600px;
+    margin: auto;
+  }
+
+  .modal h2 {
+    font-size: 18px;
+    margin-bottom: 20px;
+    color: var(--accent);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 12px;
+    color: var(--text2);
+    font-weight: 500;
+    letter-spacing: 0.05em;
+  }
+
+  input[type="text"],
+  input[type="date"],
+  textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  input:focus, textarea:focus { border-color: var(--accent); }
+
+  textarea { resize: vertical; min-height: 80px; }
+
+  .progress-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .progress-item.checked {
+    background: rgba(74,222,128,0.07);
+    border-color: rgba(74,222,128,0.2);
+  }
+
+  .progress-item label {
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 160px;
+  }
+
+  .progress-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--green);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .progress-item input[type="date"] { flex: 1; min-width: 140px; }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text3);
+  }
+
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+
+  .io-section {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .toolbar { flex-direction: column; align-items: stretch; }
+    .search-box { min-width: unset; }
+  }
+
+  .tag { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text3); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📋 のりかえ顧客管理</h1>
+  <div class="stats" id="headerStats">顧客: 0人</div>
+</header>
+
+<div class="container">
+
+  <!-- リマインドセクション -->
+  <div class="remind-section" id="remindSection" style="display:none">
+    <h2>🔔 のりかえ予定が近い顧客</h2>
+    <div class="remind-cards" id="remindCards"></div>
+  </div>
+
+  <!-- ツールバー -->
+  <div class="toolbar">
+    <input type="text" class="search-box" id="searchInput" placeholder="名前・SNSアカウントで検索..." oninput="render()">
+    <select class="sort-select" id="sortSelect" onchange="render()">
+      <option value="remind">次回予定日順</option>
+      <option value="name">名前順</option>
+      <option value="created">登録順</option>
+    </select>
+    <button class="btn btn-primary" onclick="openModal()">＋ 新規追加</button>
+  </div>
+
+  <!-- CSV I/O -->
+  <div class="io-section">
+    <button class="btn btn-secondary btn-sm" onclick="exportCSV()">📥 CSVエクスポート</button>
+    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('csvInput').click()">📤 CSVインポート</button>
+    <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="importCSV(event)">
+  </div>
+
+  <!-- アクティブ顧客テーブル -->
+  <div class="table-wrap" id="activeTable">
+    <table>
+      <thead>
+        <tr>
+          <th>SNS</th>
+          <th>名前</th>
+          <th>次回予定日</th>
+          <th>残り日数</th>
+          <th>進捗</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="activeBody"></tbody>
+    </table>
+  </div>
+
+  <div id="emptyMsg" class="empty" style="display:none">
+    <div class="empty-icon">👥</div>
+    <div>顧客が登録されていません</div>
+  </div>
+
+  <!-- 完了済み折りたたみ -->
+  <div id="completedSection" style="margin-top:20px; display:none">
+    <div class="section-toggle" onclick="toggleCompleted()">
+      <span>✅ 完了済み顧客 (<span id="completedCount">0</span>人)</span>
+      <span id="toggleArrow">▼</span>
+    </div>
+    <div id="completedTableWrap" style="display:none">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>SNS</th>
+              <th>名前</th>
+              <th>のりかえ終了日</th>
+              <th>次回予定日</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="completedBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- モーダル -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2 id="modalTitle">新規顧客追加</h2>
+    <input type="hidden" id="editId">
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>SNSアカウント名</label>
+        <input type="text" id="fSns" placeholder="@username">
+      </div>
+      <div class="form-group">
+        <label>名前</label>
+        <input type="text" id="fName" placeholder="山田 花子">
+      </div>
+      <div class="form-group full">
+        <label>大まかな相談内容</label>
+        <textarea id="fContent" rows="3" placeholder="相談内容を入力..."></textarea>
+      </div>
+    </div>
+
+    <div style="margin:16px 0 8px; font-size:12px; color:var(--text2); letter-spacing:0.05em; font-weight:500;">進捗管理</div>
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <div class="progress-item" id="pi_payment">
+        <label><input type="checkbox" id="fc_payment" onchange="updatePI('payment')"> ③ 相談料入金</label>
+        <input type="date" id="fd_payment">
+      </div>
+      <div class="progress-item" id="pi_hearing">
+        <label><input type="checkbox" id="fc_hearing" onchange="updatePI('hearing')"> ④ ヒアリングシート返信</label>
+        <input type="date" id="fd_hearing">
+      </div>
+      <div class="progress-item" id="pi_proposal">
+        <label><input type="checkbox" id="fc_proposal" onchange="updatePI('proposal')"> ⑤ 提案書お渡し</label>
+        <input type="date" id="fd_proposal">
+      </div>
+      <div class="progress-item" id="pi_done">
+        <label><input type="checkbox" id="fc_done" onchange="updatePI('done')"> ⑥ のりかえ終了</label>
+        <input type="date" id="fd_done">
+      </div>
+      <div class="progress-item" id="pi_next">
+        <label><input type="checkbox" id="fc_next" onchange="updatePI('next')"> ⑦ 次回のりかえ予定</label>
+        <input type="date" id="fd_next">
+      </div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label style="display:block; font-size:12px; color:var(--text2); margin-bottom:6px; font-weight:500; letter-spacing:0.05em;">進捗状況メモ</label>
+      <textarea id="fMemo" rows="4" placeholder="進捗メモを自由に記入..."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="save()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEYS = ['payment','hearing','proposal','done','next'];
+let customers = JSON.parse(localStorage.getItem('crm_customers') || '[]');
+let completedOpen = false;
+
+function saveData() {
+  localStorage.setItem('crm_customers', JSON.stringify(customers));
+}
+
+function daysDiff(dateStr) {
+  if (!dateStr) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(dateStr);
+  return Math.round((d - today) / 86400000);
+}
+
+function isCompleted(c) {
+  return c.checks && c.checks.done;
+}
+
+function progressDots(c) {
+  return KEYS.map(k => {
+    const done = c.checks && c.checks[k];
+    return `<div class="dot ${done ? 'done' : ''}"></div>`;
+  }).join('');
+}
+
+function remindBadge(days) {
+  if (days === null) return '';
+  if (days < 0) return `<span class="badge danger">期限切れ ${Math.abs(days)}日</span>`;
+  if (days <= 7) return `<span class="badge danger">あと${days}日</span>`;
+  if (days <= 30) return `<span class="badge warning">あと${days}日</span>`;
+  return `<span class="badge ok">あと${days}日</span>`;
+}
+
+function render() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const sort = document.getElementById('sortSelect').value;
+
+  let active = customers.filter(c => !isCompleted(c));
+  let completed = customers.filter(c => isCompleted(c));
+
+  if (q) {
+    const f = c => (c.name||'').toLowerCase().includes(q) || (c.sns||'').toLowerCase().includes(q);
+    active = active.filter(f);
+    completed = completed.filter(f);
+  }
+
+  // ソート
+  if (sort === 'name') {
+    active.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  } else if (sort === 'created') {
+    active.sort((a,b) => (a.createdAt||0) - (b.createdAt||0));
+  } else {
+    active.sort((a,b) => {
+      const da = a.dates && a.dates.next ? daysDiff(a.dates.next) : 9999;
+      const db = b.dates && b.dates.next ? daysDiff(b.dates.next) : 9999;
+      return da - db;
+    });
+  }
+
+  // リマインド（30日以内）
+  const remind = active.filter(c => {
+    if (!c.dates || !c.dates.next) return false;
+    const d = daysDiff(c.dates.next);
+    return d !== null && d <= 30;
+  });
+
+  const rs = document.getElementById('remindSection');
+  if (remind.length > 0) {
+    rs.style.display = 'block';
+    document.getElementById('remindCards').innerHTML = remind.map(c => {
+      const d = daysDiff(c.dates.next);
+      return `<div class="remind-card" onclick="openModal('${c.id}')">
+        <div>
+          <div class="name">${esc(c.name||'名前なし')}</div>
+          <div class="sns tag">${esc(c.sns||'')}</div>
+        </div>
+        ${remindBadge(d)}
+      </div>`;
+    }).join('');
+  } else {
+    rs.style.display = 'none';
+  }
+
+  // アクティブテーブル
+  const ab = document.getElementById('activeBody');
+  if (active.length === 0) {
+    ab.innerHTML = '';
+    document.getElementById('activeTable').style.display = 'none';
+    document.getElementById('emptyMsg').style.display = 'block';
+  } else {
+    document.getElementById('activeTable').style.display = 'block';
+    document.getElementById('emptyMsg').style.display = 'none';
+    ab.innerHTML = active.map(c => {
+      const d = c.dates && c.dates.next ? daysDiff(c.dates.next) : null;
+      const nextDate = c.dates && c.dates.next ? c.dates.next : '―';
+      return `<tr>
+        <td class="tag">${esc(c.sns||'―')}</td>
+        <td><strong>${esc(c.name||'名前なし')}</strong></td>
+        <td>${nextDate}</td>
+        <td>${remindBadge(d)}</td>
+        <td><div class="progress-dots">${progressDots(c)}</div></td>
+        <td><div class="actions">
+          <button class="btn btn-secondary btn-sm" onclick="openModal('${c.id}')">編集</button>
+          <button class="btn btn-danger btn-sm" onclick="del('${c.id}')">削除</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // 完了済み
+  const cs = document.getElementById('completedSection');
+  document.getElementById('completedCount').textContent = completed.length;
+  if (completed.length > 0) {
+    cs.style.display = 'block';
+    document.getElementById('completedBody').innerHTML = completed.map(c => {
+      return `<tr class="completed">
+        <td class="tag">${esc(c.sns||'―')}</td>
+        <td>${esc(c.name||'名前なし')}</td>
+        <td>${c.dates && c.dates.done ? c.dates.done : '―'}</td>
+        <td>${c.dates && c.dates.next ? c.dates.next : '―'}</td>
+        <td><div class="actions">
+          <button class="btn btn-secondary btn-sm" onclick="openModal('${c.id}')">編集</button>
+          <button class="btn btn-danger btn-sm" onclick="del('${c.id}')">削除</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  } else {
+    cs.style.display = 'none';
+  }
+
+  // ヘッダー統計
+  document.getElementById('headerStats').textContent = `顧客: ${customers.length}人 | 完了: ${customers.filter(isCompleted).length}人`;
+}
+
+function openModal(id) {
+  document.getElementById('modalOverlay').classList.add('open');
+  if (id) {
+    const c = customers.find(x => x.id === id);
+    if (!c) return;
+    document.getElementById('modalTitle').textContent = '顧客編集';
+    document.getElementById('editId').value = id;
+    document.getElementById('fSns').value = c.sns || '';
+    document.getElementById('fName').value = c.name || '';
+    document.getElementById('fContent').value = c.content || '';
+    document.getElementById('fMemo').value = c.memo || '';
+    KEYS.forEach(k => {
+      document.getElementById('fc_'+k).checked = !!(c.checks && c.checks[k]);
+      document.getElementById('fd_'+k).value = (c.dates && c.dates[k]) || '';
+      updatePI(k);
+    });
+  } else {
+    document.getElementById('modalTitle').textContent = '新規顧客追加';
+    document.getElementById('editId').value = '';
+    ['fSns','fName','fContent','fMemo'].forEach(id => document.getElementById(id).value = '');
+    KEYS.forEach(k => {
+      document.getElementById('fc_'+k).checked = false;
+      document.getElementById('fd_'+k).value = '';
+      updatePI(k);
+    });
+  }
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function updatePI(k) {
+  const checked = document.getElementById('fc_'+k).checked;
+  const el = document.getElementById('pi_'+k);
+  if (checked) el.classList.add('checked');
+  else el.classList.remove('checked');
+}
+
+function save() {
+  const id = document.getElementById('editId').value;
+  const checks = {}, dates = {};
+  KEYS.forEach(k => {
+    checks[k] = document.getElementById('fc_'+k).checked;
+    dates[k] = document.getElementById('fd_'+k).value;
+  });
+  const data = {
+    sns: document.getElementById('fSns').value.trim(),
+    name: document.getElementById('fName').value.trim(),
+    content: document.getElementById('fContent').value.trim(),
+    memo: document.getElementById('fMemo').value.trim(),
+    checks, dates
+  };
+  if (!data.name && !data.sns) { alert('名前またはSNSアカウントを入力してください'); return; }
+  if (id) {
+    const i = customers.findIndex(x => x.id === id);
+    if (i !== -1) customers[i] = { ...customers[i], ...data };
+  } else {
+    customers.push({ id: Date.now().toString(), createdAt: Date.now(), ...data });
+  }
+  saveData();
+  closeModal();
+  render();
+}
+
+function del(id) {
+  if (!confirm('この顧客を削除しますか？')) return;
+  customers = customers.filter(x => x.id !== id);
+  saveData();
+  render();
+}
+
+function toggleCompleted() {
+  completedOpen = !completedOpen;
+  document.getElementById('completedTableWrap').style.display = completedOpen ? 'block' : 'none';
+  document.getElementById('toggleArrow').textContent = completedOpen ? '▲' : '▼';
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// CSV エクスポート
+function exportCSV() {
+  const headers = ['ID','SNS','名前','相談料入金日','入金完了','ヒアリング返信日','ヒアリング完了','提案書お渡し日','提案書完了','のりかえ終了日','終了完了','次回予定日','次回完了','相談内容','進捗メモ'];
+  const rows = customers.map(c => [
+    c.id, c.sns||'', c.name||'',
+    c.dates&&c.dates.payment||'', c.checks&&c.checks.payment?'1':'0',
+    c.dates&&c.dates.hearing||'', c.checks&&c.checks.hearing?'1':'0',
+    c.dates&&c.dates.proposal||'', c.checks&&c.checks.proposal?'1':'0',
+    c.dates&&c.dates.done||'', c.checks&&c.checks.done?'1':'0',
+    c.dates&&c.dates.next||'', c.checks&&c.checks.next?'1':'0',
+    (c.content||'').replace(/\n/g,' '),
+    (c.memo||'').replace(/\n/g,' ')
+  ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
+
+  const bom = '\uFEFF';
+  const csv = bom + [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `顧客管理_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// CSV インポート
+function importCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result.replace(/^\uFEFF/,'');
+    const lines = text.split('\n').filter(l => l.trim());
+    if (lines.length < 2) return;
+    const mode = confirm('「OK」→追加インポート\n「キャンセル」→上書きインポート') ? 'add' : 'overwrite';
+    const imported = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = parseCSVLine(lines[i]);
+      if (cols.length < 13) continue;
+      imported.push({
+        id: cols[0] || Date.now().toString() + i,
+        createdAt: Date.now(),
+        sns: cols[1], name: cols[2],
+        dates: { payment:cols[3], hearing:cols[5], proposal:cols[7], done:cols[9], next:cols[11] },
+        checks: { payment:cols[4]==='1', hearing:cols[6]==='1', proposal:cols[8]==='1', done:cols[10]==='1', next:cols[12]==='1' },
+        content: cols[13]||'', memo: cols[14]||''
+      });
+    }
+    if (mode === 'overwrite') customers = imported;
+    else customers = [...customers, ...imported];
+    saveData();
+    render();
+    alert(`${imported.length}件インポートしました`);
+  };
+  reader.readAsText(file, 'UTF-8');
+  event.target.value = '';
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+    else cur += c;
+  }
+  result.push(cur);
+  return result;
+}
+
+// モーダル外クリックで閉じる
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+});
+
+render();
+</script>
+</body>
+</html>
