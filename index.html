@@ -422,7 +422,6 @@
           <th>次回予定日</th>
           <th>残り日数</th>
           <th>進捗</th>
-          <th>稼働確認</th>
           <th>操作</th>
         </tr>
       </thead>
@@ -506,13 +505,6 @@
       </div>
     </div>
 
-    <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:12px;">
-      <div style="font-size:12px; color:var(--text2); margin-bottom:8px; font-weight:500; letter-spacing:0.05em;">月次稼働確認</div>
-      <div class="progress-item" id="pi_kado">
-        <label><input type="checkbox" id="fc_kado" onchange="updatePI('kado')"> <span id="kadoMonthLabel">稼働確認チェック</span></label>
-      </div>
-    </div>
-
     <div style="margin-top:14px;">
       <label style="display:block; font-size:12px; color:var(--text2); margin-bottom:6px; font-weight:500; letter-spacing:0.05em;">進捗状況メモ</label>
       <textarea id="fMemo" rows="4" placeholder="進捗メモを自由に記入..."></textarea>
@@ -529,20 +521,6 @@
 const KEYS = ['payment','hearing','proposal','done','next'];
 let customers = JSON.parse(localStorage.getItem('crm_customers') || '[]');
 let completedOpen = false;
-
-function getCurrentMonth() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-}
-
-function getMonthLabel() {
-  const now = new Date();
-  return `${now.getMonth()+1}月`;
-}
-
-function isKadoChecked(c) {
-  return c.kadoMonth === getCurrentMonth() && c.kadoChecked === true;
-}
 
 function saveData() {
   localStorage.setItem('crm_customers', JSON.stringify(customers));
@@ -636,14 +614,12 @@ function render() {
     ab.innerHTML = active.map(c => {
       const d = c.dates && c.dates.next ? daysDiff(c.dates.next) : null;
       const nextDate = c.dates && c.dates.next ? c.dates.next : '―';
-      const kadoOk = isKadoChecked(c);
       return `<tr>
         <td class="tag">${esc(c.sns||'―')}</td>
         <td><strong>${esc(c.name||'名前なし')}</strong></td>
         <td>${nextDate}</td>
         <td>${remindBadge(d)}</td>
         <td><div class="progress-dots">${progressDots(c)}</div></td>
-        <td style="text-align:center">${kadoOk ? '<span style="color:var(--green);font-size:16px;font-weight:700">✓</span>' : '<span style="color:var(--text3)">―</span>'}</td>
         <td><div class="actions">
           <button class="btn btn-secondary btn-sm" onclick="openModal('${c.id}')">編集</button>
           <button class="btn btn-danger btn-sm" onclick="del('${c.id}')">削除</button>
@@ -679,7 +655,6 @@ function render() {
 
 function openModal(id) {
   document.getElementById('modalOverlay').classList.add('open');
-  document.getElementById('kadoMonthLabel').textContent = getMonthLabel() + ' 稼働確認チェック';
   if (id) {
     const c = customers.find(x => x.id === id);
     if (!c) return;
@@ -694,8 +669,6 @@ function openModal(id) {
       document.getElementById('fd_'+k).value = (c.dates && c.dates[k]) || '';
       updatePI(k);
     });
-    document.getElementById('fc_kado').checked = isKadoChecked(c);
-    updatePI('kado');
   } else {
     document.getElementById('modalTitle').textContent = '新規顧客追加';
     document.getElementById('editId').value = '';
@@ -705,8 +678,6 @@ function openModal(id) {
       document.getElementById('fd_'+k).value = '';
       updatePI(k);
     });
-    document.getElementById('fc_kado').checked = false;
-    updatePI('kado');
   }
 }
 
@@ -728,15 +699,12 @@ function save() {
     checks[k] = document.getElementById('fc_'+k).checked;
     dates[k] = document.getElementById('fd_'+k).value;
   });
-  const kadoChecked = document.getElementById('fc_kado').checked;
   const data = {
     sns: document.getElementById('fSns').value.trim(),
     name: document.getElementById('fName').value.trim(),
     content: document.getElementById('fContent').value.trim(),
     memo: document.getElementById('fMemo').value.trim(),
-    checks, dates,
-    kadoMonth: getCurrentMonth(),
-    kadoChecked
+    checks, dates
   };
   if (!data.name && !data.sns) { alert('名前またはSNSアカウントを入力してください'); return; }
   if (id) {
